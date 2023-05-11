@@ -4,14 +4,14 @@ import java.util.Scanner;
 import java.util.regex.*;
 
 public class IterMatrix {
+    private final int ITERATIONS = 10; // Количество итераций
+    private final int NEEDDESC = 5; // Необходимое количество монотонно убывающих разностей
+
     private double[][] a; // Двумерный массив коэффициентов и
     private int num; // Количество уравнений в системе
     private int order[];
     private double[] ans; // Массив решений системы, если система не была решена, содержит null
-    private final int ITERATIONS = 10; // Количество итераций
-    private final int NEEDDESC = 5; // необходимое количество монотонно убывающих разностей
-    private boolean dus;
-    private double sums[];
+    private double sums[]; // Массив сумм коэффициентов строк
 
     // Конструктор по умолчанию, инициализация переменных класса нулями
     public IterMatrix(){
@@ -60,6 +60,7 @@ public class IterMatrix {
         scan.close();
     }
 
+    //  Метод проверяет наличие нулей на главной диагонали
     private boolean checkZeroes(){
         // Проход по диагонали, если встретили ноль isZero(), меняем его на ноль и return false
         // return true
@@ -124,8 +125,7 @@ public class IterMatrix {
         return null;
     }
 
-    // Метод меняет две указанные строки в матрице местами
-
+    // Проверка является ли данное число нулём с точностью 4 знака
     private static boolean isZero(double a){
         return Math.abs(a) < 0.0001;
     }
