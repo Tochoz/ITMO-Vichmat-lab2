@@ -7,13 +7,16 @@ public class Main {
 
             system.init("data.txt");
             system.print();                     // вывод системы в консоль
+            int cond = system.prepare();
             System.out.println();
 
             // TODO что значит система, решаемая методом
 
-            double[] ans = system.solve();// решение системы
+            double[] ans = system.solve(cond);// решение системы
             if (ans != null) // вывод массива ответов системы
                 system.printAns();
+            else
+                System.out.println("Не удалось найти решение");
         } catch (FileNotFoundException e){
             System.out.println("File not found");
         }

@@ -5,20 +5,21 @@ import java.util.regex.*;
 
 public class IterMatrix {
     private final int ITERATIONS = 10; // Количество итераций
-    private final int NEEDDESC = 5; // Необходимое количество монотонно убывающих разностей
+    private final int NEEDDESC = 4; // Необходимое количество монотонно убывающих разностей
+    private final double ACCURACY = 0.0001; // Точность приближений
 
     private double[][] a; // Двумерный массив коэффициентов и
     private int num; // Количество уравнений в системе
-    private int order[];
     private double[] ans; // Массив решений системы, если система не была решена, содержит null
     private double sums[]; // Массив сумм коэффициентов строк
+    private int[] noZeroesOrder;
 
     // Конструктор по умолчанию, инициализация переменных класса нулями
     public IterMatrix(){
         num = 0;
-        order = null;
         a = null;
         ans = null;
+        noZeroesOrder = null;
     }
 
     // Метод выделяющий память под заданное количество строк
@@ -26,8 +27,6 @@ public class IterMatrix {
         this.num = num;
         // Выделение памяти для двумерного массива
         a = new double[num][num + 1];
-        // Выделение памяти для массива порядка строк
-        order = new int[num];
         // Аналогично для массива решений
         ans = new double[num];
     }
@@ -50,95 +49,171 @@ public class IterMatrix {
         //   Построчное сканирование n строк с n+1 числами и запись в a[][]
         int i, j;
         for (i=0; i<num; i++){
-            order[i] = i;
             str = scan.nextLine();
             sn = pat.split(str.trim());
-            for (j=0; j <= num; j++)
+            for (j=0; j <= num; j++) {
                 a[i][j] = Double.parseDouble(sn[j]);
+
+                sums[i] += Math.abs(a[i][j]);   // Считаем массив сумм
+            }
         }
         //   Закрытие сканера
         scan.close();
     }
 
     //  Метод проверяет наличие нулей на главной диагонали
-    private boolean checkZeroes(){
+    private boolean checkZeroes(int[] order){
         // Проход по диагонали, если встретили ноль isZero(), меняем его на ноль и return false
         // return true
         return false;
     }
 
-    // Метод вычисляет сумму коэффициентов в строке
-    private void computeSums(){
-        // TODO надо ли отдельно это или можно в init сразу
-    }
+    // Нахождение правильного порядка, на вход даётся элемент с которого начать переставлять
+    // Возвращает true если ДУС нашлось
+    private boolean findOrder(int start, int[] order){
+        if (checkDUS(order)) // Нашли порядок удовл ДУС
+            return true;
+        if (noZeroesOrder == null && checkZeroes(order)){ // Находим хоть одну перестановку у которой нет нулей, если не найдена
+            System.arraycopy(order, 0, noZeroesOrder, 0, num + 1);
+        }
+        if (start >= num) // Дошли до конца перебора
+            return false;
 
-    // Нахождение правильного порядка, на вход даётся элемент с которого начать переставлять и нужно ли пытаться ДУС выполнять
-    private boolean findOrder(int start, boolean DUS_needed){
-        // TODO нужно их одновременно найти или если не получилось ДУС можно с нуля найти без нулей
-        return true;
-    }
+        if (findOrder(start + 1, order))        // Проверяем комбинацию дальше, если нет переставляем
+            return true;
 
-    private boolean checkDUS() {// TODO нужно ли при перестановках вызывать
+        for (int i = start + 1; i < num; i++) {
+            swapElements(i, start, order);           // Меняем элементы после start с ним
+            if (findOrder(start + 1, order))   // Проверяем удачная ли перестановка
+                return true;
+            swapElements(start, i, order);          // Меняем элементы назад
+        }
         return false;
     }
 
-    public double[] solve(){
+    // Метод меняет элементы в массиве местами
+    private static void swapElements(int i, int j, int[] array) {
+        int temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+    }
+
+    private boolean checkDUS(int[] order) {
+        // Проходит по диагональным элементам и проверяет являются ли они не меньше суммы остальных
+    }
+
+    // Метод подготавливает систему к решению, возвращает 0 если есть нули, 1 если дус не выполняется, 2 если дус выполняется
+    public int prepare(){
+        // Посчитать суммы
+
+        // Создание начального порядка индексов order
+        int[] order = new int[num];
+        for (int i=0; i<num; i++){
+
+        }
+
+
         // Проверка есть ли нули на диагонали
         // если да
             // Попытка найти перестановку с ДУС
-            // DUS = findOrder(0, true);
-            // if (!DUS)
-            //      findOrder(0, false);
+            // if (findOrder(order))
+                // replace(order);
+                // return 2;
+            // else if (noZeroesOrder != null) если нашли перестановку без нулей
+                // replace(order);
+                // return 1;
+            // else
+                // return 0;
+        // if (checkDUS(order))
+            // return 2;
         // else
-            // DUS = checkDUS()
+            // return 1;
+    }
 
-        // TODO что делать если ДУС не выполняется в шаге 5
+    // Метод переставляет строки матрицы в заданном порядке
+    public void replace(int[] order) {
+        double[][] temp = new double[num][]; // Временная матрица
+        for (int i = 0; i < num; i++) {
+            temp[i] = a[order[i]];
+        }
+        a = temp;
+    }
 
-        // Произвести итерации, если расходится вернуть null
-        if (!doIterations()) // TODO можно ли так
-            return null;
+    // Метод получает состояние подготовленной системы
+    public double[] solve(int cond){
+        // записать в цикле начальное приближение
+        for (int i=0; i < num; i++)
+            ans[i] = 0;
+
+        switch (cond){
+            case 0:
+                System.out.println("Система имеет нули на главной диагонали");
+                ans = null;
+                break;
+            case 1:
+                solve_control();
+                break;
+            case 2:
+                solve_no_control();
+                break;
+        }
         return ans;
     }
 
-    // Метод считает разность между наибольшим и наименьшим элементом на текущем массиве приближений
-    // На вход получает массив новых приблежений
-    private double computeDelta(double[] newIter){
-        // создать переменную максимума
-        double max = newIter[0] - ans[0];
-        // Высчитывать разности между оставшимися соотв элементами и обновлять максимум
-        return max;
+    private void solve_control(){
+        int i;
+        double cur, prev; // prev - предыдущая дельта, cur - текущая
+        for(i = 0; i < ITERATIONS - NEEDDESC - 1; i++) { // Проводим первые итерации до контроля
+            prev = iterate();
+        }
+        for(i = 0; i < NEEDDESC; i++) {  // Итерации с контролем
+            cur = iterate();
+            if(prev < cur) {             // Если монотонность прервана
+                System.out.println("Метод расходится");
+                ans = null;
+                return;
+            }
+            prev = cur;
+        } // Если на полпути сошёлся то вывод
+        solve_no_control();
     }
 
-    // Метод производит итерации, считает разности и смотрит расходится или нет
-    // Если метод расходится вернёт false
-    private boolean doIterations(){
-        // создать переменную последней разности
-        // получает новые приближения newAns = iterate() ..
-        // посчитать и записать разность computeDelta(newAns)
-        return false;
+    private void solve_no_control(){
+        while (iterate() >= ACCURACY){}
     }
 
-    // Метод производит одну итерацию над массивом решений и возвращает массив новых приближений
-    private double[] iterate(){
-        // Создать новый массив
-        // в цикле пересчитать
-        return null;
-    }
+    // Метод производит одну итерацию над массивом решений и возвращает максимальную разность
+    private double iterate(){
+        double delta = 0, temp;                // Дельта и переменная в которой будем считать приближения
 
-    // Проверка является ли данное число нулём с точностью 4 знака
-    private static boolean isZero(double a){
-        return Math.abs(a) < 0.0001;
+        for(int j = 0; j < num; j++) {        // Для всех неизвестных
+
+            temp = ans[j];
+            ans[j] = a[j][num];  // Приравниваем переменной значение свободного члена
+
+            for(int k = 0; k < j; k++) {    // Вычитаем произведения с неизвестными до данной
+                ans[j] -= a[j][k] * ans[k];
+            }
+            for(int k = j + 1; k < num; k++) { // После
+                ans[j] -= a[j][k] * ans[k];
+            }
+
+            ans[j] /= a[j][j];         // Делим на диагональный
+            temp = Math.abs(temp - ans[j]);  // Находим разность с предыдущим значением
+            if(temp > delta)    // Обновляем максимум
+                delta = temp;
+        }
+        return delta;
     }
 
     // Метод вывода двумерного массива коэффициентов системы в экспонениальном виде
     public void print(){
-    // Вывести строки в порядке order
     // Для каждого элемента каждой строки двумерного массива a[][] выполнять
     // Форматированный вывод значения в экпоненциальном виде
         int i, j;
         for (i=0; i<num; i++){
             for (j=0; j<num+1; j++)
-                System.out.printf("%15.6E",a[order[i]][j]);
+                System.out.printf("%15.6E",a[i][j]);
             System.out.println();
         }
     }
