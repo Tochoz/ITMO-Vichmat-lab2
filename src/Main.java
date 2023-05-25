@@ -10,8 +10,6 @@ public class Main {
             int cond = system.prepare();
             System.out.println();
 
-            // TODO что значит система, решаемая методом
-
             double[] ans = system.solve(cond);// решение системы
             if (ans != null) // вывод массива ответов системы
                 system.printAns();

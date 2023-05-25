@@ -7,6 +7,7 @@ public class IterMatrix {
     private final int ITERATIONS = 10; // Количество итераций
     private final int NEEDDESC = 4; // Необходимое количество монотонно убывающих разностей
     private final double ACCURACY = 0.0001; // Точность приближений
+    private final double EPS = 0.001; // Епсилон, меньше которого числа считается нулём
 
     private double[][] a; // Двумерный массив коэффициентов и
     private int num; // Количество уравнений в системе
@@ -29,6 +30,8 @@ public class IterMatrix {
         a = new double[num][num + 1];
         // Аналогично для массива решений
         ans = new double[num];
+
+        sums = new double[num];
     }
 
     // Инициализация системы чтением из файла, на вход имя файла выбрасывает исключение если такой файл не найден
@@ -53,19 +56,31 @@ public class IterMatrix {
             sn = pat.split(str.trim());
             for (j=0; j <= num; j++) {
                 a[i][j] = Double.parseDouble(sn[j]);
-
-                sums[i] += Math.abs(a[i][j]);   // Считаем массив сумм
             }
         }
         //   Закрытие сканера
         scan.close();
     }
 
-    //  Метод проверяет наличие нулей на главной диагонали
+    // Метод считает массив сумм
+    private void computeSums(){
+        for (int i=0; i<num; i++)
+            for (int j=0; j<num; j++)
+                sums[i] += Math.abs(a[i][j]);   // Считаем массив сумм
+    }
+
+    //  Метод проверяет наличие нулей на главной диагонали true, если есть
     private boolean checkZeroes(int[] order){
-        // Проход по диагонали, если встретили ноль isZero(), меняем его на ноль и return false
-        // return true
+        for (int i=0; i<num; i++)
+            if (Math.abs(a[order[i]][i]) < EPS)
+                return true;
         return false;
+    }
+
+    // Метод копирует числа первого массива во второй
+    private static void arrayCopy(int[] a, int[] b){
+        for (int i=0; i<a.length; i++)
+            b[i] = a[i];
     }
 
     // Нахождение правильного порядка, на вход даётся элемент с которого начать переставлять
@@ -74,7 +89,8 @@ public class IterMatrix {
         if (checkDUS(order)) // Нашли порядок удовл ДУС
             return true;
         if (noZeroesOrder == null && checkZeroes(order)){ // Находим хоть одну перестановку у которой нет нулей, если не найдена
-            System.arraycopy(order, 0, noZeroesOrder, 0, num + 1);
+            noZeroesOrder = new int[num];
+            arrayCopy(order, noZeroesOrder);
         }
         if (start >= num) // Дошли до конца перебора
             return false;
@@ -98,36 +114,51 @@ public class IterMatrix {
         array[j] = temp;
     }
 
+    // Метод проверяет достаточное условие сходимости на текущей последовательности
     private boolean checkDUS(int[] order) {
-        // Проходит по диагональным элементам и проверяет являются ли они не меньше суммы остальных
+        int check = 0; // Количество строк, где число на диагонали равно сумме остальных
+        for(int i = 0; i < num; i++) {
+            if(sums[i] > 2 * Math.abs(a[order[i]][i]))
+                return false;
+            else {
+                if(Math.abs(sums[i] - 2 * Math.abs(a[order[i]][i])) < EPS) { // Если разность меньше EPS то они равны
+                    if(check != num - 1) { // Если все числа равны суммам
+                        check++;
+                    }
+                    else
+                        return false;
+                }
+            }
+        }
+        return true;
+        // Проходит по диагональным элементам и проверяет, являются ли они не меньше суммы остальных
     }
 
     // Метод подготавливает систему к решению, возвращает 0 если есть нули, 1 если дус не выполняется, 2 если дус выполняется
     public int prepare(){
         // Посчитать суммы
-
+        computeSums();
         // Создание начального порядка индексов order
         int[] order = new int[num];
-        for (int i=0; i<num; i++){
-
-        }
-
+        for (int i=0; i<num; i++)
+            order[i] = i;
 
         // Проверка есть ли нули на диагонали
-        // если да
+        if (checkZeroes(order)){
             // Попытка найти перестановку с ДУС
-            // if (findOrder(order))
-                // replace(order);
-                // return 2;
-            // else if (noZeroesOrder != null) если нашли перестановку без нулей
-                // replace(order);
-                // return 1;
-            // else
-                // return 0;
-        // if (checkDUS(order))
-            // return 2;
-        // else
-            // return 1;
+            if (findOrder(0, order)){
+                 replace(order); // Переставляем строки
+                 return 2;
+            } else if (noZeroesOrder != null) { // если нашли перестановку без нулей
+                replace(noZeroesOrder);
+                return 1;
+            } else
+                 return 0;
+        }
+        if (checkDUS(order)) // Если нулей и не было
+             return 2;
+         else
+             return 1;
     }
 
     // Метод переставляет строки матрицы в заданном порядке
@@ -141,9 +172,6 @@ public class IterMatrix {
 
     // Метод получает состояние подготовленной системы
     public double[] solve(int cond){
-        // записать в цикле начальное приближение
-        for (int i=0; i < num; i++)
-            ans[i] = 0;
 
         switch (cond){
             case 0:
@@ -151,9 +179,11 @@ public class IterMatrix {
                 ans = null;
                 break;
             case 1:
+                // записать в цикле начальное приближение
                 solve_control();
                 break;
             case 2:
+                // записать в цикле начальное приближение
                 solve_no_control();
                 break;
         }
@@ -161,21 +191,28 @@ public class IterMatrix {
     }
 
     private void solve_control(){
-        int i;
-        double cur, prev; // prev - предыдущая дельта, cur - текущая
-        for(i = 0; i < ITERATIONS - NEEDDESC - 1; i++) { // Проводим первые итерации до контроля
-            prev = iterate();
-        }
-        for(i = 0; i < NEEDDESC; i++) {  // Итерации с контролем
+        int i, count=0; // Кол-во монотонно убывающих
+        double cur=0, prev; // prev - предыдущая дельта, cur - текущая
+        prev = iterate();
+
+        for(i = 1; i < ITERATIONS; i++) {  // Итерации с контролем
             cur = iterate();
-            if(prev < cur) {             // Если монотонность прервана
-                System.out.println("Метод расходится");
-                ans = null;
-                return;
+            if(prev > cur) { // Убывает
+                count++;
+                if (count == NEEDDESC) // Достигнуто нужное количество
+                    break;
+            } else {
+                count = 0;
             }
             prev = cur;
-        } // Если на полпути сошёлся то вывод
-        solve_no_control();
+        }
+        if (count != NEEDDESC){ // Если не сошлось
+            System.out.println("Метод расходится");
+            ans = null;
+            return;
+        }
+        if (cur >= ACCURACY) // Если точность приближений недостаточна
+            solve_no_control();
     }
 
     private void solve_no_control(){
