@@ -9,6 +9,8 @@ public class Main {
             system.print();                     // вывод системы в консоль
             int cond = system.prepare();
             System.out.println();
+            system.print();
+            System.out.println();
 
             double[] ans = system.solve(cond);// решение системы
             if (ans != null) // вывод массива ответов системы

@@ -88,7 +88,7 @@ public class IterMatrix {
     private boolean findOrder(int start, int[] order){
         if (checkDUS(order)) // Нашли порядок удовл ДУС
             return true;
-        if (noZeroesOrder == null && checkZeroes(order)){ // Находим хоть одну перестановку у которой нет нулей, если не найдена
+        if (noZeroesOrder == null && !checkZeroes(order)){ // Находим хоть одну перестановку у которой нет нулей, если не найдена
             noZeroesOrder = new int[num];
             arrayCopy(order, noZeroesOrder);
         }
@@ -118,10 +118,10 @@ public class IterMatrix {
     private boolean checkDUS(int[] order) {
         int check = 0; // Количество строк, где число на диагонали равно сумме остальных
         for(int i = 0; i < num; i++) {
-            if(sums[i] > 2 * Math.abs(a[order[i]][i]))
+            if(Math.abs(sums[order[i]]) > 2 * Math.abs(a[order[i]][i]))
                 return false;
             else {
-                if(Math.abs(sums[i] - 2 * Math.abs(a[order[i]][i])) < EPS) { // Если разность меньше EPS то они равны
+                if(Math.abs(Math.abs(sums[order[i]]) - 2 * Math.abs(a[order[i]][i])) < EPS) { // Если разность меньше EPS то они равны
                     if(check != num - 1) { // Если все числа равны суммам
                         check++;
                     }
